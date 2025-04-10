@@ -1,58 +1,40 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+import numpy as np
 
-file_path = 'WPI-2004-05-March2017.xlsx'
-data = pd.read_excel(file_path)
+# Importing the Excel file
+df = pd.read_excel('C:/Users/Acer/Downloads/Python Project/rawData.xlsx')
 
-data = data.dropna()
-data = data[data['Weight'] >= 1]
 
-plt.hist(data['Weight'], bins=50, edgecolor='k')
-plt.xlabel('Weight')
-plt.ylabel('Count')
-plt.title('Distribution of Commodity Weights')
-plt.show()
+# Dataset Summary
+print(df.info())
+print(df.describe())
 
-all_commodities = data[data['COMMODITIES'] == 'ALL COMMODITIES']
-time_series = all_commodities.iloc[:, 2:].mean(axis=0)
-time_series.index = pd.to_datetime(time_series.index)
-plt.plot(time_series.index, time_series.values)
-plt.xlabel('Time')
-plt.ylabel('Index Value')
-plt.title('Trend of All Commodities Index Over Time')
-plt.show()
+# Make a working copy of the original data
+df_clean = df.copy()
 
-correlation = data.corr()
-print(correlation['Weight'])
+# Step 1: Replace placeholder values in latitude and longitude
+df_clean[['latitude', 'longitude']] = df_clean[['latitude', 'longitude']].replace(-1.0, np.nan)
 
-top_commodities = data.nlargest(5, 'Weight')
-print(top_commodities[['COMMODITIES', 'Weight']])
+# Missing values count before cleaning
+print("\nMissing values before cleaning:")
+print(df_clean.isnull().sum())
 
-monthly_avg = time_series.groupby(time_series.index.month).mean()
-plt.plot(monthly_avg.index, monthly_avg.values)
-plt.xlabel('Month')
-plt.ylabel('Average Index Value')
-plt.title('Seasonal Patterns in All Commodities Index')
-plt.show()
+# Dropped rows where both latitude and longitude are missing (they're not useful)
+df_clean = df_clean[~(df_clean['latitude'].isna() & df_clean['longitude'].isna())]
 
-X = pd.to_numeric(time_series.index).values.reshape(-1, 1)
-y = time_series.values
+# Dropped rows where state_name is missing
+# Here we drop them since we can't impute them reliably without geo lookup
+df_clean = df_clean[df_clean['state_name'].notna()]
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = LinearRegression()
-model.fit(X_train, y_train)
+# Strip whitespace and standardize case in string columns
+str_cols = ['inout_travelling', 'operator', 'network_type', 'calldrop_category', 'state_name']
+for col in str_cols:
+    df_clean[col] = df_clean[col].str.strip().str.title()
 
-y_pred = model.predict(X_test)
-mse = mean_squared_error(y_test, y_pred)
-print("Mean Squared Error:", mse)
+# Final missing values check after cleaning
+print("\nMissing values after cleaning:")
+print(df_clean.isnull().sum())
 
-plt.scatter(X_test, y_test, color='blue', label='Actual')
-plt.plot(X_test, y_pred, color='red', label='Predicted')
-plt.xlabel('Time')
-plt.ylabel('Index Value')
-plt.title('Linear Regression: Predicted vs Actual')
-plt.legend()
-plt.show()
+# Cleaned data preview
+print("\nCleaned DataFrame preview:")
+print(df_clean.head())
