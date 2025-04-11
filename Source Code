@@ -86,3 +86,45 @@ plt.xlabel('Month')
 plt.ylabel('Average Rating')
 plt.grid(True)
 plt.show()
+
+
+# Normalisation
+scaler = MinMaxScaler()
+df_clean[['rating', 'latitude', 'longitude']] = scaler.fit_transform(df_clean[['rating', 'latitude', 'longitude']])
+print("\nAfter Normalisation")
+print(df_clean[['rating', 'latitude', 'longitude']].describe())
+
+# Scatter Plot
+plt.scatter(df_clean['latitude'], df_clean['rating'])
+plt.xlabel('Latitude (Normalized)')
+plt.ylabel('Rating (Normalized)')
+plt.title('Scatterplot: Latitude vs Rating')
+plt.grid(True)
+plt.show()
+
+# Linear Regression Model
+x = df_clean[['latitude']]
+y = df_clean['rating']
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 42)
+model = LinearRegression()
+model.fit(x_train, y_train)
+
+# Predict
+check_location = pd.DataFrame({'latitude': [scaler.transform([[0, 20.5, 0]])[0][1]]})
+result = model.predict(check_location)
+print("Predicted Rating for Latitude 20.5: ", result[0])
+
+# Plot Regression Line
+plt.scatter(x, y, color="blue", alpha=0.5)
+plt.plot(x, model.predict(x), color="red", linewidth=2)
+plt.xlabel('Latitude (Normalized)')
+plt.ylabel('Rating (Normalized)')
+plt.title('Linear Regression Fit: Latitude vs Rating')
+plt.grid(True)
+plt.show()
+
+# Mean Squared Error
+y_pred = model.predict(x_test)
+mse = mean_squared_error(y_test, y_pred)
+print(f"Mean Squared Error (MSE): {mse:.4f}")
+
