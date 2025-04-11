@@ -87,6 +87,10 @@ plt.ylabel('Average Rating')
 plt.grid(True)
 plt.show()
 
+# Pair Plot
+sns.pairplot(df_clean, hue="rating")
+plt.show()
+
 
 # Normalisation
 scaler = MinMaxScaler()
